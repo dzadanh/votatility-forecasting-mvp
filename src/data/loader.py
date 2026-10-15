@@ -21,8 +21,7 @@ def load_data(company_name: str) -> pd.DataFrame:
     if not input_path.is_file():
         raise FileNotFoundError(f"Không tìm thấy file dữ liệu: {input_path}")
 
-    data = pd.DataFrame(pd.read_csv(input_path, parse_dates=["time"]))
-    return data
+    return pd.read_csv(input_path)
 
 
 def main() -> None:
