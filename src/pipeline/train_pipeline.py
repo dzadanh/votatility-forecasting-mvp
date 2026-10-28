@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Callable
 import pandas as pd
 from sklearn.metrics import average_precision_score
 
@@ -28,15 +29,22 @@ def _write_json(path: Path, value: dict) -> None:
 
 def run_training(ticker: str = "ACB", model: str = "all", fast: bool = False,
                  config_path: str | Path | None = None, artifact_dir: str | Path | None = None,
-                 csv_path: str | Path | None = None, lstm_candidate: dict | None = None) -> dict:
+                 csv_path: str | Path | None = None, lstm_candidate: dict | None = None,
+                 progress_callback: Callable[[str, float], None] | None = None) -> dict:
     """Train selected models, evaluate once on matched test dates, save outputs."""
+    def report(stage: str, fraction: float) -> None:
+        if progress_callback is not None:
+            progress_callback(stage, fraction)
+
     config = load_config(config_path or ROOT / "config.yaml")
     if model != "all" and model not in MODEL_NAMES:
         raise ValueError(f"Unknown model: {model}")
     if lstm_candidate is not None and (model != "lstm" or fast):
         raise ValueError("A tuned LSTM candidate requires --model lstm without --fast")
     names = MODEL_NAMES if model == "all" else (model,)
+    report("Đang kiểm tra CSV và chia dữ liệu theo thời gian", 0.04)
     dataset = prepare_dataset(ticker, config, csv_path)
+    report("Dữ liệu đã sẵn sàng", 0.10)
     has_validation_folds = hasattr(dataset, "validation_folds")
     validation_folds = (dataset.validation_folds if has_validation_folds
                         else ((dataset.train, dataset.validation),))
@@ -74,7 +82,8 @@ def run_training(ticker: str = "ACB", model: str = "all", fast: bool = False,
         metadata["lstm_selection"] = {"candidate": lstm_candidate["name"],
                                       "source": "purged_expanding_fold_mean_high_average_precision"}
     models, forecasts, alert_calibration = {}, [], {}
-    for name in names:
+    for model_index, name in enumerate(names):
+        report(f"Đang huấn luyện {name}", 0.12 + 0.70 * model_index / len(names))
         if name == "garch":
             settings = config["models"][name]
             fitted = GARCHModel(dataset.horizon, settings["mean"], settings["distribution"]).fit(dataset.train)
@@ -116,6 +125,8 @@ def run_training(ticker: str = "ACB", model: str = "all", fast: bool = False,
         metadata["model_settings"][name] = settings
         fitted.save(out / f"{name}.joblib")
         models[name] = fitted
+        report(f"Đang đánh giá validation: {name}",
+               0.12 + 0.70 * (model_index + 0.5) / len(names))
         if has_validation_folds:
             fold_forecasts = []
             for fold_train, fold_validation in validation_folds:
@@ -156,6 +167,8 @@ def run_training(ticker: str = "ACB", model: str = "all", fast: bool = False,
             calibration["score_kind"] = "predicted_volatility"
         alert_calibration[name] = calibration
         forecasts.append(fitted.predict(history, dataset.test["date"]))
+        report(f"Đã hoàn tất {name}", 0.12 + 0.70 * (model_index + 1) / len(names))
+    report("Đang tính metrics và lưu dự báo", 0.86)
     warning.save(out / "warning.json")
     metadata["alert_calibration"] = alert_calibration
     metadata["alert_policy"] = {"max_alert_rate": max_alert_rate, "min_precision": min_precision,
@@ -202,7 +215,9 @@ def run_training(ticker: str = "ACB", model: str = "all", fast: bool = False,
     metadata["latest_date"] = str(latest_date.date())
     _write_json(out / "metadata.json", metadata)
     if "xgboost" in models:
+        report("Đang tính SHAP cho XGBoost", 0.96)
         sample = pd.concat([history.loc[history["date"].isin(comparison["date"])].tail(29),
                             history.tail(1)], ignore_index=True)
         _write_json(out / "shap.json", explain_xgboost(models["xgboost"], sample))
+    report("Đã lưu đầy đủ kết quả", 0.99)
     return {"artifacts": str(out), "metrics": metrics, "metadata": metadata}

@@ -10,12 +10,12 @@ Dự án nhận dữ liệu giá và khối lượng OHLCV theo ngày (Open, Hig
 - **XGBoost:** mô hình cây tăng cường, học quan hệ giữa các đặc trưng hiện tại/quá khứ và nhãn biến động tương lai.
 - **LSTM:** mạng hồi tiếp đọc một cửa sổ đặc trưng theo thứ tự thời gian.
 
-Pipeline huấn luyện và dự báo dùng CSV cục bộ. Dashboard Streamlit đọc kết quả đã lưu; nó không huấn luyện lại mô hình mỗi lần mở trang.
+Pipeline huấn luyện và dự báo dùng CSV cục bộ. Dashboard Streamlit cho upload CSV đã có và huấn luyện khi người dùng bấm nút; các trang kết quả đọc artifact đã lưu, không huấn luyện lại mỗi lần mở trang.
 
 ## 2. Cây thư mục
 
 ```text
-votatility-forecasting-test/
+votatility-forecasting/
 ├── app/                 # Dashboard Streamlit
 ├── data/                # Dữ liệu raw và processed (cần có CSV đầu vào)
 ├── notebooks/           # Notebook khám phá và thử nghiệm
@@ -30,7 +30,7 @@ votatility-forecasting-test/
 └── README.md            # Hướng dẫn chạy nhanh và một số hợp đồng dự án
 ```
 
-Trong bản workspace được khảo sát, chưa thấy CSV dữ liệu trong `data/`; các lệnh train/predict mặc định cần `data/raw/acb.csv`. Cần đặt dữ liệu ở đó hoặc truyền `--csv` trỏ tới CSV OHLCV hợp lệ.
+Repo hiện có CSV ACB, FPT, HPG và VIC trong `data/raw/`; các lệnh train/predict mặc định dùng `data/raw/acb.csv`. Trang Huấn luyện của Streamlit chỉ nhận CSV do người dùng upload, không gọi script tải dữ liệu.
 
 ## 3. Luồng hoạt động tổng thể
 
@@ -51,7 +51,7 @@ CSV OHLCV
    │     └─ lưu model, dự báo, ngưỡng cảnh báo, metrics, metadata, SHAP
    │
    ├─ predict_pipeline ──> nạp artifact và dự báo origin mới nhất
-   └─ Streamlit ──> đọc artifact để hiển thị tổng quan/so sánh/giải thích
+   └─ Streamlit ──> upload CSV / tạo run train riêng / đọc artifact để hiển thị
 ```
 
 ### Các bước dữ liệu
@@ -115,7 +115,8 @@ MAE và RMSE đo sai số dự báo; R² đo mức phù hợp khi có đủ mẫ
 #### Pipeline
 
 - `src/pipeline/dataset.py` — `Dataset` gom frame đầy đủ và ba split; `prepare_dataset` dựng lại dữ liệu từ CSV thô, kiểm tra ngày/schema, tạo split có purge; `valid_history` giữ hàng có feature hợp lệ kể cả hàng chưa có target; `feature_matrix` chỉ chọn đúng danh sách feature và từ chối NaN/Inf hoặc target/date.
-- `src/pipeline/train_pipeline.py` — điều phối huấn luyện, tuning, dự báo test/latest, căn ngày, tính metrics, phân loại cảnh báo, và ghi artifact vào `artifacts/<TICKER>/`.
+- `src/pipeline/train_pipeline.py` — điều phối huấn luyện, tuning, dự báo test/latest, căn ngày, tính metrics, phân loại cảnh báo và ghi artifact vào thư mục được chọn.
+- `src/pipeline/training_jobs.py` — kiểm tra CSV upload, tạo `run_id`, chạy một job local tại một thời điểm và lưu trạng thái/kết quả theo run.
 - `src/pipeline/predict_pipeline.py` — nạp metadata/model đã lưu, kiểm tra schema và cấu hình hiện tại có tương thích, tạo dự báo origin mới nhất từ lịch sử CSV và áp dụng ngưỡng cảnh báo đã lưu.
 
 #### Mô hình
@@ -148,7 +149,8 @@ MAE và RMSE đo sai số dự báo; R² đo mức phù hợp khi có đủ mẫ
 
 ### `app/`
 
-- `app/app.py` — entry point Streamlit; đọc CSV/JSON artifacts có cache và điều hướng bốn trang. Trang tổng quan lấy dữ liệu cục bộ; các trang kết quả dựa trên artifact.
+- `app/app.py` — entry point Streamlit; điều hướng năm trang, cho chọn ticker/run và đọc CSV/JSON artifacts có cache theo phiên bản file.
+- `app/pages/training.py` — upload CSV đã có, chọn mô hình, gửi job train offline và xem trạng thái/metrics sau khi hoàn tất.
 - `app/pages/overview.py` — hiển thị khoảng ngày, số phiên, giá đóng cửa và volatility lịch sử 20 phiên từ CSV.
 - `app/pages/forecast.py` — hiển thị forecast latest, nhãn rủi ro/ngưỡng train và biểu đồ test của mô hình chọn.
 - `app/pages/comparison.py` — bảng metrics các mô hình và biểu đồ actual so với forecast trên test chung.
@@ -164,6 +166,7 @@ MAE và RMSE đo sai số dự báo; R² đo mức phù hợp khi có đủ mẫ
 - `tests/test_models_and_risk.py` — kiểm tra GARCH/XGBoost/LSTM, khả năng lưu/nạp, chuỗi LSTM, scaler chỉ fit trên train và ngưỡng cảnh báo.
 - `tests/test_warning_engine.py` — file hiện có nhưng rỗng.
 - `tests/test_shap_and_integration.py` — kiểm tra tính cộng SHAP; có bài chạy end-to-end ACB đánh dấu `slow`.
+- `tests/test_training_jobs.py` — kiểm tra upload, cách ly run, chặn job đồng thời, phục hồi trạng thái bị ngắt và luồng GARCH thực qua Streamlit.
 - `tests/` còn `test_warning_engine.py` và `test_target.py`; hai file này hiện rỗng, các kiểm tra liên quan nằm trong các file test khác.
 
 ### `notebooks/`
@@ -186,7 +189,7 @@ Notebook phục vụ phân tích/thử nghiệm tương tác. Luồng chạy tá
 
 ## 6. Artifact sau khi train
 
-`artifacts/<TICKER>/` được tạo khi chạy train và bị Git ignore. Các file chính:
+CLI mặc định tạo `artifacts/<TICKER>/`; Streamlit tạo `artifacts/runs/<run_id>/<TICKER>/` cùng `input.csv`, `config.yaml` và `status.json` trong thư mục run. Tất cả bị Git ignore. Các file model chính:
 
 | File | Mục đích |
 |---|---|
