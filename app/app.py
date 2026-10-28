@@ -52,6 +52,15 @@ def _version(folder: Path) -> tuple[int, ...]:
                  for name in names)
 
 
+def _overview_source(selected: dict | None, raw: Path, ticker: str) -> Path:
+    """Resolve uploaded input from its run folder, independent of the host OS."""
+    if selected and not selected["id"].startswith("legacy:"):
+        uploaded = selected["folder"].parent / "input.csv"
+        if uploaded.is_file():
+            return uploaded
+    return raw / f"{ticker.lower()}.csv"
+
+
 def main():
     st.set_page_config(page_title="Volatility Forecasting", layout="wide")
     navigation = st.session_state.pop("navigate_to_run", None)
@@ -91,11 +100,7 @@ def main():
 
     if page == "Tổng quan":
         try:
-            if selected:
-                metadata = json.loads((selected["folder"] / "metadata.json").read_text(encoding="utf-8"))
-                source = metadata.get("source_csv") or raw / f"{ticker.lower()}.csv"
-            else:
-                source = raw / f"{ticker.lower()}.csv"
+            source = _overview_source(selected, raw, ticker)
             overview.render(ticker, str(source))
         except FileNotFoundError:
             st.info(f"Chưa có CSV cho {ticker}. Hãy tải CSV lên ở trang Huấn luyện.")

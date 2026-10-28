@@ -1,0 +1,209 @@
+{
+  "garch": {
+    "mae": 1.1315600507425705,
+    "rmse": 1.397389571579747,
+    "r2": -0.15955529405814928,
+    "samples": 259,
+    "high_warning": {
+      "precision": 0.8273381294964028,
+      "recall": 0.6117021276595744,
+      "f1": 0.7033639143730887,
+      "support": 188,
+      "prediction_threshold": 2.9521151759018744,
+      "alert_count": 139,
+      "alert_rate_percent": 53.66795366795367,
+      "confusion_matrix": [
+        [
+          47,
+          24
+        ],
+        [
+          73,
+          115
+        ]
+      ]
+    },
+    "risk_levels": {
+      "labels": [
+        "NORMAL",
+        "WARNING",
+        "HIGH"
+      ],
+      "per_class": {
+        "NORMAL": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 24
+        },
+        "WARNING": {
+          "precision": 0.2916666666666667,
+          "recall": 0.7446808510638298,
+          "f1": 0.41916167664670656,
+          "support": 47
+        },
+        "HIGH": {
+          "precision": 0.8273381294964028,
+          "recall": 0.6117021276595744,
+          "f1": 0.7033639143730887,
+          "support": 188
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          12,
+          12
+        ],
+        [
+          0,
+          35,
+          12
+        ],
+        [
+          0,
+          73,
+          115
+        ]
+      ]
+    }
+  },
+  "lstm": {
+    "mae": 1.0943370695394818,
+    "rmse": 1.395629239904567,
+    "r2": -0.1566356841304981,
+    "samples": 259,
+    "high_warning": {
+      "precision": 0.7894736842105263,
+      "recall": 0.6382978723404256,
+      "f1": 0.7058823529411765,
+      "support": 188,
+      "prediction_threshold": 2.174851894378662,
+      "alert_count": 152,
+      "alert_rate_percent": 58.68725868725869,
+      "confusion_matrix": [
+        [
+          39,
+          32
+        ],
+        [
+          68,
+          120
+        ]
+      ]
+    },
+    "risk_levels": {
+      "labels": [
+        "NORMAL",
+        "WARNING",
+        "HIGH"
+      ],
+      "per_class": {
+        "NORMAL": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 24
+        },
+        "WARNING": {
+          "precision": 0.2641509433962264,
+          "recall": 0.5957446808510638,
+          "f1": 0.3660130718954248,
+          "support": 47
+        },
+        "HIGH": {
+          "precision": 0.7894736842105263,
+          "recall": 0.6382978723404256,
+          "f1": 0.7058823529411765,
+          "support": 188
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          11,
+          13
+        ],
+        [
+          0,
+          28,
+          19
+        ],
+        [
+          1,
+          67,
+          120
+        ]
+      ]
+    }
+  },
+  "xgboost": {
+    "mae": 1.1253194114357856,
+    "rmse": 1.420148457527084,
+    "r2": -0.1976335679414709,
+    "samples": 259,
+    "high_warning": {
+      "precision": 0.7513227513227513,
+      "recall": 0.7553191489361702,
+      "f1": 0.753315649867374,
+      "support": 188,
+      "prediction_threshold": 1.8481520414352417,
+      "alert_count": 189,
+      "alert_rate_percent": 72.97297297297297,
+      "confusion_matrix": [
+        [
+          24,
+          47
+        ],
+        [
+          46,
+          142
+        ]
+      ]
+    },
+    "risk_levels": {
+      "labels": [
+        "NORMAL",
+        "WARNING",
+        "HIGH"
+      ],
+      "per_class": {
+        "NORMAL": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 24
+        },
+        "WARNING": {
+          "precision": 0.22857142857142856,
+          "recall": 0.3404255319148936,
+          "f1": 0.27350427350427353,
+          "support": 47
+        },
+        "HIGH": {
+          "precision": 0.7513227513227513,
+          "recall": 0.7553191489361702,
+          "f1": 0.753315649867374,
+          "support": 188
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          8,
+          16
+        ],
+        [
+          0,
+          16,
+          31
+        ],
+        [
+          0,
+          46,
+          142
+        ]
+      ]
+    }
+  }
+}

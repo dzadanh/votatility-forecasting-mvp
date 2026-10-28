@@ -22,7 +22,7 @@ votatility-forecasting/
 ├── scripts/             # Lệnh CLI cho train, predict, evaluate, tải dữ liệu
 ├── src/                 # Mã nguồn xử lý dữ liệu, mô hình và pipeline
 ├── tests/               # Kiểm tra hợp đồng dữ liệu và hành vi các module
-├── artifacts/           # Đầu ra huấn luyện; bị Git ignore, tạo khi chạy
+├── artifacts/           # Đầu ra huấn luyện; có thể commit làm dữ liệu demo
 ├── config.yaml          # Cấu hình dùng chung
 ├── requirements.txt     # Thư viện Python
 ├── pytest.ini           # Cấu hình pytest
@@ -181,15 +181,15 @@ Notebook phục vụ phân tích/thử nghiệm tương tác. Luồng chạy tá
 ### File cấu hình và tài liệu
 
 - `config.yaml` — ticker mặc định, offline, horizon, sequence length, danh sách feature, tỷ lệ chia dữ liệu, quantile cảnh báo, seed, tham số mô hình và đường dẫn raw/artifact.
-- `requirements.txt` — thư viện chính gồm pandas/numpy, scikit-learn, arch, xgboost, torch, shap, Streamlit, Plotly, PyYAML, joblib và pytest.
+- `requirements.txt` — thư viện phát triển gồm pandas/numpy, scikit-learn, arch, xgboost, torch, shap, Streamlit, Plotly, PyYAML, joblib và pytest; `app/requirements.txt` là bộ dependency đã chốt phiên bản cho Community Cloud, không có pytest.
 - `pytest.ini` — cấu hình pytest; trong đó có marker cho kiểm thử chậm.
-- `.gitignore` — bỏ qua môi trường ảo, cache, artifacts và dữ liệu processed sạch. Nó không tự xóa file đã được Git track trước đó.
+- `.gitignore` — bỏ qua môi trường ảo, cache và dữ liệu processed sạch; không bỏ qua `artifacts/` để có thể commit dữ liệu demo.
 - `README.md` — hướng dẫn cài đặt/chạy và ghi lại các hợp đồng quan trọng về đơn vị, split, artifact và giới hạn prototype.
 - `overview.md` — tài liệu giải thích cấu trúc và luồng dự án này.
 
 ## 6. Artifact sau khi train
 
-CLI mặc định tạo `artifacts/<TICKER>/`; Streamlit tạo `artifacts/runs/<run_id>/<TICKER>/` cùng `input.csv`, `config.yaml` và `status.json` trong thư mục run. Tất cả bị Git ignore. Các file model chính:
+CLI mặc định tạo `artifacts/<TICKER>/`; Streamlit tạo `artifacts/runs/<run_id>/<TICKER>/` cùng `input.csv`, `config.yaml` và `status.json` trong thư mục run. Các artifact mẫu có thể commit để Community Cloud hiển thị; run mới sinh trên Cloud không lưu bền vững. Các file model chính:
 
 | File | Mục đích |
 |---|---|

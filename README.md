@@ -8,7 +8,7 @@ Bản mẫu nghiên cứu dự báo độ biến động cổ phiếu trong 5 ph
 - `src/data/`, `src/features/`, `src/pipeline/`: làm sạch dữ liệu, tạo đặc trưng/nhãn tương lai, chia tập theo thời gian và điều phối huấn luyện/dự báo.
 - `src/models/`, `src/risk/`, `src/evaluation/`, `src/explainability/`: mô hình, cảnh báo, đánh giá và SHAP.
 - `scripts/`: các lệnh CLI; `app/`: dashboard Streamlit và trang upload/train offline; `tests/`: kiểm thử; `notebooks/`: khám phá và thử nghiệm.
-- `config.yaml`: cấu hình dùng chung; `artifacts/<TICKER>/`: kết quả huấn luyện cục bộ, không được Git theo dõi.
+- `config.yaml`: cấu hình dùng chung; `artifacts/<TICKER>/`: kết quả huấn luyện có thể commit để dashboard cloud hiển thị dữ liệu mẫu.
 
 Luồng chính: CSV thô (có sẵn hoặc do người dùng upload) → kiểm tra/làm sạch → đặc trưng từ hiện tại và quá khứ → nhãn biến động tương lai → chia train/validation/test theo thời gian → huấn luyện và đánh giá → lưu artifact → CLI dự báo hoặc dashboard.
 
@@ -66,7 +66,7 @@ python -m streamlit run app/app.py
 
 Mở Local URL mà Streamlit in trong terminal (thường là `http://localhost:8501`). Nhấn `Ctrl+C` để dừng server. Trang **Huấn luyện** cho tải CSV OHLCV đã có từ máy lên, nhập ticker, chọn XGBoost/GARCH/LSTM hoặc cả ba và bấm **Bắt đầu huấn luyện**. CSV được kiểm tra theo cùng pipeline của CLI trước khi nhận job; giới hạn 10 MB và 50.000 dòng. Không có chức năng tìm kiếm/tải dữ liệu thị trường từ giao diện.
 
-Mỗi lần train có `run_id` riêng tại `artifacts/runs/<run_id>/`: `input.csv`, bản chụp `config.yaml`, `status.json` và thư mục `<TICKER>/` chứa kết quả. Trang Huấn luyện tự cập nhật trạng thái, tiến độ theo **bước** (không phải ước tính thời gian), metrics test và dự báo mới nhất khi job thành công. Có thể đổi trang rồi quay lại chọn lần train trong danh sách. Worker local xử lý **một job tại một thời điểm**; job khác sẽ được từ chối cho đến khi job hiện tại xong. Nếu tiến trình Streamlit bị dừng giữa chừng, job được đánh dấu gián đoạn và không tự phục hồi. Bản MVP local chưa có xác thực hoặc cách ly dữ liệu giữa người dùng; cần bổ sung các phần này cùng worker/lưu trữ bền vững trước khi mở tính năng train trên link công khai.
+Mỗi lần train có `run_id` riêng tại `artifacts/runs/<run_id>/`: `input.csv`, bản chụp `config.yaml`, `status.json` và thư mục `<TICKER>/` chứa kết quả. Trang Huấn luyện tự cập nhật trạng thái, tiến độ theo **bước** (không phải ước tính thời gian), metrics test và dự báo mới nhất khi job thành công. Có thể đổi trang rồi quay lại chọn lần train trong danh sách. Worker xử lý **một job tại một thời điểm**; job khác sẽ được từ chối cho đến khi job hiện tại xong. Nếu tiến trình Streamlit bị dừng giữa chừng, job được đánh dấu gián đoạn và không tự phục hồi. Bản MVP chưa có xác thực hoặc cách ly dữ liệu giữa người dùng: mọi người truy cập cùng một app có thể xem các run trên server.
 
 Thanh bên cho chọn mã chứng khoán, lần huấn luyện và các trang:
 
@@ -77,6 +77,14 @@ Thanh bên cho chọn mã chứng khoán, lần huấn luyện và các trang:
 - **Giải thích:** SHAP toàn cục và theo ngày của XGBoost khi artifact `shap.json` có mặt; GARCH/LSTM chưa có SHAP.
 
 Dashboard vẫn đọc được artifact CLI cũ tại `<paths.artifacts>/<TICKER>/`, đồng thời cho chọn các run do giao diện tạo trong `<paths.artifacts>/runs/`. Artifact CLI tạo bằng `--artifact-dir` ở thư mục khác sẽ không xuất hiện nếu `paths.artifacts` chưa trỏ tới thư mục đó. Các trang kết quả chỉ đọc file đã lưu; không train lại khi đổi trang. Cache kết quả được phân biệt theo phiên bản file để hiện metrics mới sau khi train.
+
+## Triển khai bản demo trên Streamlit Community Cloud
+
+1. Kiểm tra các file trong `artifacts/` trước khi commit, nhất là `runs/*/input.csv` và metadata: repo công khai sẽ công khai cả dữ liệu upload và đường dẫn ghi trong metadata. Commit các artifact mẫu muốn hiển thị cùng mã nguồn, `config.yaml`, `data/raw/` và `.streamlit/config.toml`, rồi push lên GitHub. `artifacts/` hiện không bị Git ignore; Git **không tự thêm** file mới nếu chưa `git add`.
+2. Trong [Streamlit Community Cloud](https://share.streamlit.io/), tạo app từ repo/branch đã push, chọn **Main file path** là `app/app.py` và **Python 3.11** trong Advanced settings. Cloud sẽ dùng `app/requirements.txt` nằm cạnh entrypoint; file này chốt các phiên bản đã chạy cục bộ, dùng PyTorch CPU cho LSTM và bỏ `pytest` của môi trường phát triển. Chạy từ thư mục gốc repo để `.streamlit/config.toml` ẩn menu trang tự động như khi chạy local.
+3. Mở link được cấp, chọn **Tổng quan**, **Dự báo & Cảnh báo**, **So sánh** hoặc **Giải thích** để xem artifact đã commit. Trang **Huấn luyện** vẫn nhận CSV upload và tạo run trên máy chủ Cloud, nhưng file mới sinh chỉ tồn tại tạm trong phiên chạy; muốn chúng thành dữ liệu demo cố định sau khi app khởi động lại, cần commit/push các artifact đó từ môi trường phát triển.
+
+Community Cloud có giới hạn tài nguyên; huấn luyện đủ ba mô hình, nhất là LSTM và SHAP, có thể chạy chậm hoặc vượt giới hạn. Demo công khai hiện dùng chung một worker, không có tài khoản hay vùng dữ liệu riêng cho từng người xem. Chỉ upload CSV có thể chia sẻ công khai và tránh dùng kết quả sinh trên Cloud như kho lưu trữ lâu dài.
 
 Chế độ **chạy nhanh** chỉ kiểm tra luồng và được đánh dấu trên giao diện; không dùng metrics đó để kết luận chất lượng. Nếu hiện “Chưa có kết quả”, hãy upload/train cho đúng ticker hoặc chọn artifact CLI đã có. Nếu hiện “Chưa có SHAP”, hãy train XGBoost. Dashboard không phát cảnh báo ra email/Telegram hay cập nhật thời gian thực.
 
@@ -94,7 +102,7 @@ Các giai đoạn test hiện có đã được xem trong quá trình phát tri�
 
 ## Artifact ổn định
 
-`artifacts/<TICKER>/` của CLI hoặc `artifacts/runs/<run_id>/<TICKER>/` của Streamlit (đều bị Git ignore) gồm:
+`artifacts/<TICKER>/` của CLI hoặc `artifacts/runs/<run_id>/<TICKER>/` của Streamlit (có thể đưa lên Git để làm dữ liệu demo) gồm:
 
 | File | Nội dung |
 |---|---|
@@ -113,4 +121,4 @@ Ngoài luồng CLI chính, `scripts/lstm_tune.py` tìm cấu hình LSTM theo cá
 
 ## Phạm vi tiếp theo
 
-`scripts/download_data.py` giữ nguyên hành vi provider cũ và không được gọi bởi pipeline hay Streamlit. Việc lựa chọn, kiểm định và tích hợp nguồn dữ liệu khác được để lại cho giai đoạn sau. `.venv/` và `artifacts/` bị Git ignore; khi chuyển máy cần tạo lại môi trường Python và huấn luyện lại hoặc chuyển artifact bằng cách riêng.
+`scripts/download_data.py` giữ nguyên hành vi provider cũ và không được gọi bởi pipeline hay Streamlit. Việc lựa chọn, kiểm định và tích hợp nguồn dữ liệu khác được để lại cho giai đoạn sau. `.venv/` bị Git ignore; `artifacts/` có thể được đưa lên Git, nhưng cần kiểm tra dữ liệu và metadata trước khi push. Khi chuyển máy vẫn cần tạo lại môi trường Python.

@@ -1,0 +1,15 @@
+# Community Cloud runs on Linux. Use the CPU-only PyTorch wheel for LSTM training.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+streamlit==1.66.1
+numpy==2.4.6
+pandas==3.1.0
+scipy==1.17.1
+scikit-learn==1.9.1
+arch==8.0.0
+xgboost==2.1.4
+torch==2.14.1+cpu
+shap==0.51.0
+plotly==7.1.0
+PyYAML==6.0.3
+joblib==1.6.0

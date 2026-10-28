@@ -111,3 +111,13 @@ def test_uploaded_garch_runs_real_pipeline(tmp_path, monkeypatch):
     app = view.click().run(timeout=30)
     assert not app.exception
     assert app.sidebar.radio[0].value == "So sánh"
+
+    # A committed run may contain an absolute path from another machine.
+    metadata_path = folder / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["source_csv"] = r"Z:\old-machine\input.csv"
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    app = app.sidebar.radio[0].set_value("Tổng quan").run(timeout=30)
+    assert not app.exception
+    assert any(header.value == "Tổng quan dữ liệu" for header in app.header)
+    assert not any("Chưa có CSV" in message.value for message in app.info)

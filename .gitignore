@@ -1,7 +1,6 @@
 .venv/
 .testenv/
 .uv-cache/
-artifacts/
 __pycache__/
 *.py[cod]
 .pytest_cache/

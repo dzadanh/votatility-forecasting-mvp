@@ -1,0 +1,12 @@
+{
+  "q_warning": 0.5,
+  "q_high": 0.7,
+  "warning_threshold": 1.2451214825447765,
+  "high_threshold": 1.8526738759092714,
+  "model_high_thresholds": {
+    "garch": 2.9521151759018744,
+    "xgboost": 1.8481520414352417,
+    "lstm": 2.174851894378662
+  },
+  "model_high_probability_thresholds": {}
+}
